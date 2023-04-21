@@ -1,6 +1,6 @@
 # egui_phosphor
 
-Bundles Phosphor icons with boilerplate to use in your egui app.
+Bundles [Phosphor icons](https://phosphoricons.com/) with boilerplate to use in your egui app.
 
 ## Installation
 
