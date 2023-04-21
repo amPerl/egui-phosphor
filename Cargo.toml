@@ -1,7 +1,10 @@
 [package]
 name = "egui-phosphor"
+description = "Phosphor icons for egui"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/amPerl/egui-phosphor"
 
 [dependencies]
 egui = { version = "0.21", default-features = false }
