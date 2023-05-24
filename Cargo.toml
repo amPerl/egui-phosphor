@@ -7,4 +7,4 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/amPerl/egui-phosphor"
 
 [dependencies]
-egui = { version = "0.21", default-features = false }
+egui = { version = "0.22", default-features = false }
