@@ -12,7 +12,7 @@ pub fn font_data() -> egui::FontData {
     }
     #[cfg(feature = "filled")]
     {
-       font_data = egui::FontData::from_static(include_bytes!("../res/Phosphor-Fill.ttf"));
+       font_data = egui::FontData::from_static(include_bytes!("../res/Phosphor-Fillz.ttf"));
     }
     font_data.tweak.y_offset_factor = 0.0;
     font_data
