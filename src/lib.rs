@@ -2,17 +2,17 @@ pub mod icons;
 pub use icons::*;
 
 pub fn font_data() -> egui::FontData {
-    #[cfg(all(feature = "foo", feature = "bar"))]
-    compile_error!("Features \"lines\" and \"filled\" are mutually exclusive ");
+    #[cfg(all(feature = "regular", feature = "fill"))]
+    compile_error!("Features \"regular\" and \"fill\" are mutually exclusive ");
 
     let mut font_data;
-    #[cfg(feature = "lines")]
+    #[cfg(feature = "regular")]
     {
-       font_data = egui::FontData::from_static(include_bytes!("../res/Phosphor.ttf"));
+        font_data = egui::FontData::from_static(include_bytes!("../res/Phosphor-Regular.ttf"));
     }
-    #[cfg(feature = "filled")]
+    #[cfg(feature = "fill")]
     {
-       font_data = egui::FontData::from_static(include_bytes!("../res/Phosphor-Fill.ttf"));
+        font_data = egui::FontData::from_static(include_bytes!("../res/Phosphor-Fill.ttf"));
     }
     font_data.tweak.y_offset_factor = 0.0;
     font_data

@@ -10,6 +10,6 @@ repository = "https://github.com/amPerl/egui-phosphor"
 egui = { version = "0.22", default-features = false }
 
 [features]
-default = ["lines"]
-filled = []
-lines = []
+default = ["regular"]
+fill = []
+regular = []
