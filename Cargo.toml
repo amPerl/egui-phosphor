@@ -11,5 +11,15 @@ egui = { version = "0.22", default-features = false }
 
 [features]
 default = ["regular"]
-fill = []
+thin = []
+light = []
 regular = []
+bold = []
+fill = []
+
+[dev-dependencies]
+eframe = "0.22"
+
+[[example]]
+name = "multiple_variants"
+required-features = ["thin", "light", "regular", "bold", "fill"]
