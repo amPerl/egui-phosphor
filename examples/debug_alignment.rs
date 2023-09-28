@@ -31,6 +31,12 @@ impl eframe::App for Demo {
                 ui.painter()
                     .debug_rect(resp.rect, egui::Color32::RED, format!("{size}"));
             }
+            for size in [16.0, 92.0] {
+                let _ = ui.button(
+                    egui::RichText::new(format!("FILE_CODE {}", egui_phosphor::regular::FILE_CODE))
+                        .size(size),
+                );
+            }
         });
     }
 }
