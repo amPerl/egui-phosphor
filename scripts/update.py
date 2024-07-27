@@ -33,6 +33,11 @@ for info in zip.infolist():
 
         variants[variant] = (font, icons)
 
+# Remove duotone variants as they don't seem to be supported by egui font
+# rendering
+if "duotone" in variants:
+    del variants["duotone"]
+
 print(f"[*] Found {len(variants)} variants ({', '.join(variants.keys())})")
 
 print("[*] Writing font and source files")
