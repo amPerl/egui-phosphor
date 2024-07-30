@@ -8,7 +8,7 @@ fn main() {
             viewport: ViewportBuilder::default().with_inner_size((320.0, 755.0)),
             ..Default::default()
         },
-        Box::new(|cc| Box::new(Demo::new(cc))),
+        Box::new(|cc| Ok(Box::new(Demo::new(cc)))),
     )
     .unwrap();
 }

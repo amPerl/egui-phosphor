@@ -2,7 +2,7 @@ fn main() {
     eframe::run_native(
         "egui-phosphor demo",
         Default::default(),
-        Box::new(|cc| Box::new(Demo::new(cc))),
+        Box::new(|cc| Ok(Box::new(Demo::new(cc)))),
     )
     .unwrap();
 }
