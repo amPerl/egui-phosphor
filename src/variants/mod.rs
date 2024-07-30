@@ -35,19 +35,23 @@ pub enum Variant {
 }
 
 impl Variant {
-    pub fn font_data(&self) -> egui::FontData {
-        let mut font_data = egui::FontData::from_static(match self {
+    pub fn font_bytes(&self) -> &'static [u8] {
+        match self {
             #[cfg(feature = "thin")]
-            Variant::Thin => include_bytes!("../../res/Phosphor-Thin.ttf"),
+            Variant::Thin => &*include_bytes!("../../res/Phosphor-Thin.ttf"),
             #[cfg(feature = "light")]
-            Variant::Light => include_bytes!("../../res/Phosphor-Light.ttf"),
+            Variant::Light => &*include_bytes!("../../res/Phosphor-Light.ttf"),
             #[cfg(feature = "regular")]
-            Variant::Regular => include_bytes!("../../res/Phosphor.ttf"),
+            Variant::Regular => &*include_bytes!("../../res/Phosphor.ttf"),
             #[cfg(feature = "bold")]
-            Variant::Bold => include_bytes!("../../res/Phosphor-Bold.ttf"),
+            Variant::Bold => &*include_bytes!("../../res/Phosphor-Bold.ttf"),
             #[cfg(feature = "fill")]
-            Variant::Fill => include_bytes!("../../res/Phosphor-Fill.ttf"),
-        });
+            Variant::Fill => &*include_bytes!("../../res/Phosphor-Fill.ttf"),
+        }
+    }
+
+    pub fn font_data(&self) -> egui::FontData {
+        let mut font_data = egui::FontData::from_static(self.font_bytes());
         font_data.tweak.y_offset_factor = 0.1;
         font_data
     }
