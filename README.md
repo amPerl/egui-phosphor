@@ -1,3 +1,4 @@
+[![Latest version](https://img.shields.io/crates/v/egui-phosphor.svg)](https://crates.io/crates/egui-phosphor)
 # egui_phosphor
 
 Bundles [Phosphor icons](https://phosphoricons.com/) with boilerplate to use in your egui app.
@@ -26,7 +27,10 @@ The above `add_to_fonts` helper adds the chosen variant (`Regular`) as a fallbac
 Use the constants provided by the crate in your text:
 
 ```rust
-ui.label(egui::RichText::new(format!("FILE_CODE {}", egui_phosphor::regular::FILE_CODE)).size(32.0));
+ui.label(
+  egui::RichText::new(format!("FILE_CODE {}", egui_phosphor::regular::FILE_CODE))
+    .size(32.0),
+);
 ```
 
 **Note: Make sure to use the appropriate character codes for your chosen variant!** This means for `Variant::Regular` you should use `regular::FILE_CODE`, for `Variant::Fill` you should use `fill::FILE_CODE` etc.
@@ -34,3 +38,13 @@ ui.label(egui::RichText::new(format!("FILE_CODE {}", egui_phosphor::regular::FIL
 ## License
 
 egui-phosphor is licensed under [MIT](LICENSE-MIT) OR [Apache-2.0](LICENSE-APACHE). Phosphor Icons are licensed under [MIT](https://github.com/phosphor-icons/web/blob/master/LICENSE).
+
+## Examples
+
+Try the examples with:
+
+```sh
+cargo run --example debug_alignment --features="thin light regular bold fill"
+cargo run --example multiple_variants --features="thin light regular bold fill"
+```
+
