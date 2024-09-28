@@ -27,7 +27,15 @@ jobs:
       - name: Run the script
         run: python scripts/update.py
 
+      - name: Check for changes
+        id: git_diff
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git diff --exit-code || echo "Changes detected"
+
       - name: Create Pull Request
+        if: steps.git_diff.outputs.exit-code != '0' # Only proceed if changes were detected
         uses: peter-evans/create-pull-request@v6
         with:
           title: "Update icons"
