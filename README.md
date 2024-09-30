@@ -7,7 +7,7 @@ Bundles [Phosphor icons](https://phosphoricons.com/) with boilerplate to use in 
 Add the crate as a dependency in Cargo.toml:
 
 ```toml
-egui-phosphor = "0.7.0"
+egui-phosphor = "0.7.1"
 ```
 
 On startup, update the fonts in your egui context:
