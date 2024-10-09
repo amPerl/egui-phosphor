@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "requests",
+# ]
+# ///
 # This script downloads the latest version of the Phosphor Icons from the
 # official website, extracts the TTF files into the `res` directory, and
 # generates the rust code for each variant file.
