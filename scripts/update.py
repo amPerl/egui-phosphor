@@ -58,6 +58,8 @@ for variant, (font, icons) in variants.items():
 
     with open(f"src/variants/{variant}.rs", "w") as file:
         file.write("#![allow(unused)]\n")
+        icon_list_entry = []
+
         for name, code in icons.items():
             code_point = hex(code)[2:].upper()
 
@@ -65,6 +67,11 @@ for variant, (font, icons) in variants.items():
             if variant != "regular":
                 name = name[: -(len(variant) + 1)]
 
+            icon_list_entry.append(f'("{name}", {name})')
+
             file.write(f'pub const {name}: &str = "\\u{{{code_point}}}";\n')
+        file.write("\npub const ICONS: &[(&str, &str)] = &[\n    ")
+        file.write(",\n    ".join(icon_list_entry))
+        file.write(",\n];\n")
 
 print("[*] Done!")
