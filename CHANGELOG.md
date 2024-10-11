@@ -1,5 +1,9 @@
 # egui-phosphor changelog
 
+## 0.7.3 - 2024-10-09
+
+- Fixed issue with phosphor overriding some normal latin text glyphs in egui, knocking it down to second-highest priority
+
 ## 0.7.2 - 2024-10-09
 
 - Fixed some mismatched icons, `add_to_fonts` now sets phosphor as top priority font instead of last
