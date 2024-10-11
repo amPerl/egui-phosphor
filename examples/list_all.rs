@@ -26,6 +26,9 @@ impl eframe::App for Demo {
             egui::ScrollArea::vertical()
                 .auto_shrink([false, false])
                 .show(ui, |ui| {
+                    // Make sure normal text looks good
+                    ui.heading("The quick brown fox jumps over the lazy dog.");
+
                     let mut icons = egui_phosphor::regular::ICONS.to_vec();
                     icons.sort_by_key(|(_, icon)| {
                         let code = icon.chars().next().unwrap() as usize;
