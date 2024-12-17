@@ -1,5 +1,9 @@
 # egui-phosphor changelog
 
+## 0.8.0 - 2024-12-17
+
+- Updated to egui 0.30
+
 ## 0.7.3 - 2024-10-09
 
 - Fixed issue with phosphor overriding some normal latin text glyphs in egui, knocking it down to second-highest priority
