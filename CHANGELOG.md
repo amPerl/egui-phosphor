@@ -1,5 +1,10 @@
 # egui-phosphor changelog
 
+## 0.9.0 - 2024-12-17
+
+- Updated to egui 0.31
+  - [#33](https://github.com/amPerl/egui-phosphor/pull/33) by [@bircni](https://github.com/bircni)
+
 ## 0.8.0 - 2024-12-17
 
 - Updated to egui 0.30
