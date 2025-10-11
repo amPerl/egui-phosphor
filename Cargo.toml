@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/amPerl/egui-phosphor"
 
 [dependencies]
-egui = { version = "0.32", default-features = false }
+egui = { version = "0.33", default-features = false }
 
 [features]
 default = ["regular"]
@@ -18,7 +18,7 @@ bold = []
 fill = []
 
 [dev-dependencies]
-eframe = "0.32"
+eframe = "0.33"
 
 [[example]]
 name = "multiple_variants"
