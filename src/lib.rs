@@ -1,4 +1,5 @@
 pub mod variants;
+use bevy_egui::egui;
 pub use variants::*;
 
 pub fn add_to_fonts(fonts: &mut egui::FontDefinitions, variant: Variant) {

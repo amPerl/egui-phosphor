@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use egui::ViewportBuilder;
 use egui_phosphor::{bold, fill, light, regular, thin};
 
 fn main() {

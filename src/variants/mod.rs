@@ -1,3 +1,5 @@
+use bevy_egui::egui;
+
 #[cfg(feature = "bold")]
 pub mod bold;
 #[cfg(feature = "fill")]

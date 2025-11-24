@@ -1,3 +1,5 @@
+use bevy_egui::egui;
+
 fn main() {
     eframe::run_native(
         "egui-phosphor demo",
