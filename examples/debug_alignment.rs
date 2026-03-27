@@ -21,8 +21,8 @@ impl Demo {
 }
 
 impl eframe::App for Demo {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show_inside(ui, |ui| {
             for size in [16.0, 24.0, 32.0, 48.0, 64.0, 92.0] {
                 let resp = ui.label(
                     egui::RichText::new(format!("FILE_CODE {}", egui_phosphor::regular::FILE_CODE))
