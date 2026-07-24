@@ -1,8 +1,13 @@
 //! A `const fn` TTF subsetter for icon fonts.
 //!
-//! Glyph ids are preserved, so `hmtx`, `hhea`, `maxp` and `OS/2` are copied
-//! verbatim and no renumbering is needed. Only `glyf`, `loca`, `cmap` and
-//! `GSUB` are rebuilt; `gasp`, `name` and `post` are dropped.
+//! Surviving glyphs are renumbered into a dense `0..N` range, which keeps
+//! `loca` and `hmtx` proportional to the subset rather than to the source font
+//! — worth about 9 KB. So `glyf`, `loca`, `hmtx`, `cmap` and `GSUB` are all
+//! rebuilt, `hhea` and `maxp` are patched with the new glyph count, and only
+//! `OS/2` copies verbatim. `gasp`, `name` and `post` are dropped.
+//!
+//! Renumbering is why composite glyphs are rejected: they embed the ids of
+//! their components. Phosphor has none.
 //!
 //! # Why `GSUB` is kept
 //!
@@ -235,6 +240,8 @@ const fn cov_glyph(src: &[u8], cov: usize, i: usize) -> u16 {
 struct Plan {
     keep: [u64; KEEP_WORDS],
     num_glyphs: usize,
+    /// Glyph count after renumbering.
+    num_kept: usize,
     long_loca: bool,
     seg_count: usize,
     /// Number of first-glyph coverage entries whose set retains a ligature.
@@ -248,6 +255,37 @@ const fn is_kept(keep: &[u64; KEEP_WORDS], g: usize) -> bool {
     keep[g / 64] & (1u64 << (g % 64)) != 0
 }
 
+/// Renumbered id of `old`: the number of kept glyphs below it.
+///
+/// Ids are assigned in ascending source order, so relative order is preserved
+/// and `GSUB` coverage tables stay sorted without re-sorting. Counting bits
+/// costs ~128 iterations and avoids carrying an 8192-entry map through const
+/// evaluation.
+const fn new_gid(keep: &[u64; KEEP_WORDS], old: usize) -> u16 {
+    let mut n = 0u32;
+    let w = old / 64;
+    let mut i = 0;
+    while i < w {
+        n += keep[i].count_ones();
+        i += 1;
+    }
+    let bit = old % 64;
+    if bit > 0 {
+        n += (keep[w] & ((1u64 << bit) - 1)).count_ones();
+    }
+    n as u16
+}
+
+const fn count_kept(keep: &[u64; KEEP_WORDS]) -> usize {
+    let mut n = 0u32;
+    let mut i = 0;
+    while i < KEEP_WORDS {
+        n += keep[i].count_ones();
+        i += 1;
+    }
+    n as usize
+}
+
 const fn align4(n: usize) -> usize {
     (n + 3) & !3
 }
@@ -259,7 +297,6 @@ const fn plan(src: &[u8], icons: &[&str]) -> Plan {
     let (loca, _) = find_table(src, b"loca");
     let (_, os2_len) = find_table(src, b"OS/2");
     let (_, hhea_len) = find_table(src, b"hhea");
-    let (_, hmtx_len) = find_table(src, b"hmtx");
     let (gsub, _) = opt_table(src, b"GSUB");
 
     let num_glyphs = be16(src, maxp + 4) as usize;
@@ -308,6 +345,7 @@ const fn plan(src: &[u8], icons: &[&str]) -> Plan {
     }
 
     // 3. glyf: kept records copied, each padded to 4 bytes.
+    let (glyf, _) = find_table(src, b"glyf");
     let mut glyf_len = 0;
     let mut g = 0;
     while g < num_glyphs {
@@ -315,18 +353,27 @@ const fn plan(src: &[u8], icons: &[&str]) -> Plan {
             let s = loca_at(src, loca, src_long, g);
             let e = loca_at(src, loca, src_long, g + 1);
             if e > s {
+                // Composite glyphs embed the ids of their components, which
+                // renumbering would invalidate. Phosphor has none; refuse
+                // rather than emit a silently broken outline.
+                if be16(src, glyf + s) >= 0x8000 {
+                    panic!("egui-phosphor: composite glyphs are not supported");
+                }
                 glyf_len += align4(e - s);
             }
         }
         g += 1;
     }
 
+    // Glyphs are renumbered, so loca and hmtx cover only what survived.
+    let num_kept = count_kept(&keep);
+
     // Short loca stores offset/2 in a u16, so it caps out at 131070 bytes.
     let long_loca = glyf_len > 0xFFFF * 2;
     let loca_len = if long_loca {
-        4 * (num_glyphs + 1)
+        4 * (num_kept + 1)
     } else {
-        2 * (num_glyphs + 1)
+        2 * (num_kept + 1)
     };
 
     let seg_count = count_segments(src, sub, &keep, num_glyphs) + 1; // + 0xFFFF terminator
@@ -341,7 +388,7 @@ const fn plan(src: &[u8], icons: &[&str]) -> Plan {
     len[T_GLYF] = glyf_len;
     len[T_HEAD] = head_len;
     len[T_HHEA] = hhea_len;
-    len[T_HMTX] = hmtx_len;
+    len[T_HMTX] = 4 * num_kept; // every glyph gets a long metric
     len[T_LOCA] = loca_len;
     len[T_MAXP] = maxp_len;
 
@@ -357,6 +404,7 @@ const fn plan(src: &[u8], icons: &[&str]) -> Plan {
     Plan {
         keep,
         num_glyphs,
+        num_kept,
         long_loca,
         seg_count,
         lig_sets,
@@ -387,6 +435,7 @@ const fn count_segments(src: &[u8], sub: usize, keep: &[u64; KEEP_WORDS], ng: us
         while c <= e {
             let g = gid_in_seg(src, sub, seg_count, i, c as u16) as usize;
             if g != 0 && g < ng && is_kept(keep, g) {
+                let g = new_gid(keep, g) as usize;
                 if open && c == prev_c + 1 && g as u32 == prev_g + 1 {
                     // extends the current run
                 } else {
@@ -403,6 +452,25 @@ const fn count_segments(src: &[u8], sub: usize, keep: &[u64; KEEP_WORDS], ng: us
     segs
 }
 
+/// Whether a ligature's output glyph and every component glyph survived.
+/// After renumbering a dangling reference would point at the wrong glyph.
+const fn lig_kept(src: &[u8], lg: usize, keep: &[u64; KEEP_WORDS]) -> bool {
+    let lig_g = be16(src, lg) as usize;
+    if lig_g >= MAX_GLYPHS || !is_kept(keep, lig_g) {
+        return false;
+    }
+    let comp_c = be16(src, lg + 2) as usize;
+    let mut i = 1;
+    while i < comp_c {
+        let c = be16(src, lg + 2 + 2 * i) as usize;
+        if c >= MAX_GLYPHS || !is_kept(keep, c) {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
+
 /// Bytes in one rebuilt `LigatureSet`, and how many ligatures it retains.
 const fn lig_set_size(src: &[u8], lso: usize, keep: &[u64; KEEP_WORDS]) -> (usize, usize) {
     let n = be16(src, lso) as usize;
@@ -411,11 +479,9 @@ const fn lig_set_size(src: &[u8], lso: usize, keep: &[u64; KEEP_WORDS]) -> (usiz
     let mut j = 0;
     while j < n {
         let l = lso + be16(src, lso + 2 + 2 * j) as usize;
-        let lig_g = be16(src, l) as usize;
-        let comp_c = be16(src, l + 2) as usize;
-        if lig_g < MAX_GLYPHS && is_kept(keep, lig_g) {
+        if lig_kept(src, l, keep) {
             kept += 1;
-            body += 4 + 2 * (comp_c - 1);
+            body += 4 + 2 * (be16(src, l + 2) as usize - 1);
         }
         j += 1;
     }
@@ -504,7 +570,7 @@ const fn emit(src: &[u8], p: &Plan, out: &mut [u8]) {
     let (glyf, _) = find_table(src, b"glyf");
     let (os2, os2_len) = find_table(src, b"OS/2");
     let (hhea, hhea_len) = find_table(src, b"hhea");
-    let (hmtx, hmtx_len) = find_table(src, b"hmtx");
+    let (hmtx, _) = find_table(src, b"hmtx");
     let src_long = be16(src, head + 50) == 1;
     let sub = cmap4(src, cmap);
 
@@ -547,42 +613,70 @@ const fn emit(src: &[u8], p: &Plan, out: &mut [u8]) {
         t += 1;
     }
 
-    // --- verbatim tables
+    // --- OS/2 is glyph-id free and copies verbatim
     copy(out, p.off[T_OS2], src, os2, os2_len);
+
+    // --- hhea and maxp carry glyph counts that renumbering changes
     copy(out, p.off[T_HHEA], src, hhea, hhea_len);
-    copy(out, p.off[T_HMTX], src, hmtx, hmtx_len);
+    put16(out, p.off[T_HHEA] + 34, p.num_kept as u16); // numberOfHMetrics
     copy(out, p.off[T_MAXP], src, maxp, maxp_len);
+    put16(out, p.off[T_MAXP] + 4, p.num_kept as u16); // numGlyphs
+
+    // --- hmtx, rebuilt in new-id order as all-long metrics
+    let src_nhm = be16(src, hhea + 34) as usize;
+    let mo = p.off[T_HMTX];
+    let mut g = 0;
+    while g < p.num_glyphs {
+        if is_kept(&p.keep, g) {
+            let n = new_gid(&p.keep, g) as usize;
+            // Past numberOfHMetrics the advance repeats the last entry and the
+            // side bearings continue in a trailing array.
+            let (adv, lsb) = if g < src_nhm {
+                (be16(src, hmtx + 4 * g), be16(src, hmtx + 4 * g + 2))
+            } else {
+                (
+                    be16(src, hmtx + 4 * (src_nhm - 1)),
+                    be16(src, hmtx + 4 * src_nhm + 2 * (g - src_nhm)),
+                )
+            };
+            put16(out, mo + 4 * n, adv);
+            put16(out, mo + 4 * n + 2, lsb);
+        }
+        g += 1;
+    }
 
     // --- head, with indexToLocFormat patched to match the new loca
     copy(out, p.off[T_HEAD], src, head, head_len);
     put32(out, p.off[T_HEAD] + 8, 0); // checkSumAdjustment
     put16(out, p.off[T_HEAD] + 50, if p.long_loca { 1 } else { 0 });
 
-    // --- glyf + loca
+    // --- glyf + loca, indexed by new id
     let go = p.off[T_GLYF];
     let lo = p.off[T_LOCA];
     let mut cur = 0usize;
+    let mut n = 0usize;
     let mut g = 0;
     while g < p.num_glyphs {
-        if p.long_loca {
-            put32(out, lo + 4 * g, cur as u32);
-        } else {
-            put16(out, lo + 2 * g, (cur / 2) as u16);
-        }
         if is_kept(&p.keep, g) {
+            if p.long_loca {
+                put32(out, lo + 4 * n, cur as u32);
+            } else {
+                put16(out, lo + 2 * n, (cur / 2) as u16);
+            }
             let s = loca_at(src, loca, src_long, g);
             let e = loca_at(src, loca, src_long, g + 1);
             if e > s {
                 copy(out, go + cur, src, glyf + s, e - s);
                 cur += align4(e - s);
             }
+            n += 1;
         }
         g += 1;
     }
     if p.long_loca {
-        put32(out, lo + 4 * p.num_glyphs, cur as u32);
+        put32(out, lo + 4 * n, cur as u32);
     } else {
-        put16(out, lo + 2 * p.num_glyphs, (cur / 2) as u16);
+        put16(out, lo + 2 * n, (cur / 2) as u16);
     }
 
     emit_cmap(src, sub, p, out);
@@ -652,6 +746,7 @@ const fn emit_cmap(src: &[u8], sub: usize, p: &Plan, out: &mut [u8]) {
         while c <= se {
             let gid = gid_in_seg(src, sub, src_segs, i, c as u16) as usize;
             if gid != 0 && gid < p.num_glyphs && is_kept(&p.keep, gid) {
+                let gid = new_gid(&p.keep, gid) as usize;
                 if open && c == prev_c + 1 && gid as u32 == prev_g + 1 {
                     // extend
                 } else {
@@ -777,7 +872,11 @@ const fn emit_gsub(src: &[u8], so: usize, p: &Plan, out: &mut [u8]) {
         let lso = so + be16(src, so + 6 + 2 * i) as usize;
         let (kept, bytes) = lig_set_size(src, lso, &p.keep);
         if kept > 0 {
-            put16(out, cov + 4 + 2 * k, cov_glyph(src, src_cov, i));
+            put16(
+                out,
+                cov + 4 + 2 * k,
+                new_gid(&p.keep, cov_glyph(src, src_cov, i) as usize),
+            );
             put16(out, st + 6 + 2 * k, body as u16);
 
             let dst = st + body;
@@ -788,11 +887,17 @@ const fn emit_gsub(src: &[u8], so: usize, p: &Plan, out: &mut [u8]) {
             let mut j = 0;
             while j < n {
                 let lg = lso + be16(src, lso + 2 + 2 * j) as usize;
-                let lig_g = be16(src, lg) as usize;
                 let comp_c = be16(src, lg + 2) as usize;
-                if lig_g < MAX_GLYPHS && is_kept(&p.keep, lig_g) {
+                if lig_kept(src, lg, &p.keep) {
                     put16(out, dst + 2 + 2 * m, w as u16);
-                    copy(out, dst + w, src, lg, 4 + 2 * (comp_c - 1));
+                    put16(out, dst + w, new_gid(&p.keep, be16(src, lg) as usize));
+                    put16(out, dst + w + 2, comp_c as u16);
+                    let mut c = 1;
+                    while c < comp_c {
+                        let old = be16(src, lg + 2 + 2 * c) as usize;
+                        put16(out, dst + w + 2 + 2 * c, new_gid(&p.keep, old));
+                        c += 1;
+                    }
                     w += 4 + 2 * (comp_c - 1);
                     m += 1;
                 }
