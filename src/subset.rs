@@ -1003,6 +1003,16 @@ macro_rules! subset {
                         $crate::add_font_bytes_to_fonts(fonts, FONT_NAME, &FONT);
                     }
 
+                    /// Shorthand for a [`RichText`](egui::RichText) using
+                    /// [`family`].
+                    ///
+                    /// ```ignore
+                    /// ui.label(icons::fill::rich(format!("{} Settings", icons::fill::GEAR)));
+                    /// ```
+                    pub fn rich(text: impl Into<String>) -> $crate::egui::RichText {
+                        $crate::egui::RichText::new(text).family(family())
+                    }
+
                     /// Register [`family`] only, leaving the proportional fonts
                     /// untouched. Use this for every variant after the first.
                     pub fn add_as_family(fonts: &mut $crate::egui::FontDefinitions) {
