@@ -107,8 +107,25 @@ fn non_overlapping_icons_work_unqualified() {
 }
 
 #[test]
+fn rich_pins_the_family() {
+    assert_eq!(
+        icons::fill::rich("x"),
+        egui::RichText::new("x").family(icons::fill::family())
+    );
+    // and it accepts the `format!` output the crate's usage is built around
+    let mixed = icons::fill::rich(format!("{} Settings", icons::fill::GEAR));
+    assert_eq!(mixed.text(), format!("{} Settings", icons::fill::GEAR));
+}
+
+#[test]
 fn ordinary_text_still_renders_in_an_icon_family() {
     let ctx = app_ctx();
     // The family includes the proportional fonts, so text is not tofu.
     assert!(raster(&ctx, "A", icons::fill::family()).is_some());
+    // lowercase: Phosphor maps a-z to blank ligature-input glyphs
+    assert_eq!(
+        raster(&ctx, "s", icons::fill::family()),
+        raster(&ctx, "s", FontFamily::Proportional),
+        "lowercase text in an icon family should match normal text"
+    );
 }

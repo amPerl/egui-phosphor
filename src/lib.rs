@@ -37,8 +37,11 @@ pub fn add_font_bytes_to_fonts(
 /// [`FontFamily::Name(name)`](egui::FontFamily::Name) for it, without adding it
 /// to the proportional fonts.
 ///
-/// The family also contains the proportional fonts, so ordinary text laid out in
-/// it still renders; `name` simply takes priority.
+/// The family also contains the proportional fonts. `name` goes second, not
+/// first: the subset maps `a`-`z` to the blank glyphs Phosphor's ligatures are
+/// built from, so putting it ahead of the text font would blank out ordinary
+/// lowercase text. Second still puts it ahead of any other icon font and of
+/// egui's emoji fonts, so the icons themselves resolve from it.
 pub fn add_font_bytes_as_family(
     fonts: &mut egui::FontDefinitions,
     name: &str,
@@ -53,7 +56,7 @@ pub fn add_font_bytes_as_family(
         .get(&egui::FontFamily::Proportional)
         .cloned()
         .unwrap_or_default();
-    keys.insert(0, name.into());
+    keys.insert(keys.len().min(1), name.into());
     fonts
         .families
         .insert(egui::FontFamily::Name(name.into()), keys);

@@ -71,7 +71,7 @@ icons::regular::add_to_fonts(&mut fonts);
 icons::fill::add_as_family(&mut fonts);
 
 ui.label(format!("{} Settings", icons::regular::GEAR));
-ui.label(RichText::new(icons::fill::GEAR).family(icons::fill::family()));
+ui.label(icons::fill::rich(format!("{} Favourite", icons::fill::HEART)));
 ```
 
 ## License
