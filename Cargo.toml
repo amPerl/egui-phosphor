@@ -16,6 +16,8 @@ light = []
 regular = []
 bold = []
 fill = []
+# Compile-time font subsetting via the `subset!` macro. Adds no dependencies.
+subset = []
 
 [dev-dependencies]
 eframe = "0.35"
@@ -23,3 +25,15 @@ eframe = "0.35"
 [[example]]
 name = "multiple_variants"
 required-features = ["thin", "light", "regular", "bold", "fill"]
+
+[[example]]
+name = "subset"
+required-features = ["subset", "regular"]
+
+[[test]]
+name = "subset"
+required-features = ["subset", "regular"]
+
+[[test]]
+name = "multi_variant"
+required-features = ["subset", "regular", "fill"]
