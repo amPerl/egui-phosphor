@@ -1,3 +1,7 @@
+// Every variant uses the same codepoints, so they share one table and each
+// variant module re-exports it. `update.py` verifies this still holds.
+mod codepoints;
+
 #[cfg(feature = "bold")]
 pub mod bold;
 #[cfg(feature = "fill")]
