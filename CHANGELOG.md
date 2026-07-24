@@ -1,5 +1,10 @@
 # egui-phosphor changelog
 
+## Unreleased
+
+- Added optional `subset` feature with a `subset!` macro that embeds only the named icons
+- Added `add_font_bytes_to_fonts` and `variants::bytes`
+
 ## 0.13.0 - 2027-07-22
 
 - Updated to egui 0.35

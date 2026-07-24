@@ -31,6 +31,49 @@ ui.label(egui::RichText::new(format!("FILE_CODE {}", egui_phosphor::regular::FIL
 
 **Note: Make sure to use the appropriate character codes for your chosen variant!** This means for `Variant::Regular` you should use `regular::FILE_CODE`, for `Variant::Fill` you should use `fill::FILE_CODE` etc.
 
+## Subsetting
+
+The optional `subset` feature reduces the font at compile time to only the icons you specify, at the cost of roughly 0.3s per rebuild of the crate that invokes it:
+
+```toml
+egui-phosphor = { version = "0.13", features = ["subset"] }
+```
+
+```rust
+egui_phosphor::subset! {
+    pub mod icons {
+        use regular::{GEAR, HOUSE, TRASH};
+    }
+}
+
+// on startup:
+let mut fonts = egui::FontDefinitions::default();
+icons::regular::add_to_fonts(&mut fonts);
+cc.egui_ctx.set_fonts(fonts);
+
+// in your UI:
+ui.label(format!("{} Settings", icons::regular::GEAR));
+```
+
+### Multiple variants
+
+Because every variant uses the same codepoints, only one of the variants can be the default fallback for the proportional font. Add that one with `add_to_fonts`, the rest with `add_as_family`, and select those by family:
+
+```rust
+egui_phosphor::subset! {
+    pub mod icons {
+        use regular::{GEAR, HOUSE};
+        use fill::{GEAR, HEART};
+    }
+}
+
+icons::regular::add_to_fonts(&mut fonts);
+icons::fill::add_as_family(&mut fonts);
+
+ui.label(format!("{} Settings", icons::regular::GEAR));
+ui.label(RichText::new(icons::fill::GEAR).family(icons::fill::family()));
+```
+
 ## License
 
 egui-phosphor is licensed under [MIT](LICENSE-MIT) OR [Apache-2.0](LICENSE-APACHE). Phosphor Icons are licensed under [MIT](https://github.com/phosphor-icons/web/blob/master/LICENSE).
