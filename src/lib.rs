@@ -28,7 +28,10 @@ pub fn add_font_bytes_to_fonts(
     add_font_bytes_as_family(fonts, name, bytes);
 
     if let Some(font_keys) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
-        font_keys.insert(1, name.into());
+        // Second, so it does not shadow the text font -- but `Proportional` can
+        // be empty when egui is built without `default_fonts`.
+        let at = font_keys.len().min(1);
+        font_keys.insert(at, name.into());
     }
 }
 
