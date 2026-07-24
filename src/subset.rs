@@ -1,23 +1,19 @@
 //! A `const fn` TTF subsetter for icon fonts.
 //!
-//! Surviving glyphs are renumbered into a dense `0..N` range, which keeps
-//! `loca` and `hmtx` proportional to the subset rather than to the source font
-//! — worth about 9 KB. So `glyf`, `loca`, `hmtx`, `cmap` and `GSUB` are all
-//! rebuilt, `hhea` and `maxp` are patched with the new glyph count, and only
-//! `OS/2` copies verbatim. `gasp`, `name` and `post` are dropped.
-//!
-//! Renumbering is why composite glyphs are rejected: they embed the ids of
-//! their components. Phosphor has none.
+//! Surviving glyphs are renumbered into a dense `0..N` range, so `glyf`,
+//! `loca`, `hmtx`, `cmap` and `GSUB` are rebuilt, `hhea` and `maxp` are patched
+//! with the new glyph count, and only `OS/2` copies verbatim. `gasp`, `name`
+//! and `post` are dropped. Composite glyphs are rejected because they embed the
+//! ids of their components; Phosphor has none.
 //!
 //! # Why `GSUB` is kept
 //!
 //! Phosphor's `GSUB` is a single `liga` lookup implementing "type `gear`, get
-//! the gear icon". Its side effect is that every icon glyph is reachable from
-//! the Latin letters a-z, which is how skrifa's autohinter classifies icons as
-//! Latin and gives them proper blue zones. Drop `GSUB` and icons render
-//! noticeably blurrier below ~20px. So the ligatures for the icons we keep are
-//! carried over, along with the letter glyphs they are reached from — together
-//! about 1.4 KB, and rendering stays pixel-identical to the full font.
+//! the gear icon". Nothing here uses ligatures, but they are what makes every
+//! icon glyph reachable from the Latin letters a-z, and skrifa's autohinter
+//! uses that to classify the icons as Latin. Without it they are hinted as if
+//! they were an unknown script and render visibly blurrier below ~20px, so the
+//! ligatures for the icons we keep are carried over along with those letters.
 
 const MAX_GLYPHS: usize = 8192;
 const KEEP_WORDS: usize = MAX_GLYPHS / 64;
@@ -47,8 +43,7 @@ const fn be32(d: &[u8], o: usize) -> u32 {
     (d[o] as u32) << 24 | (d[o + 1] as u32) << 16 | (d[o + 2] as u32) << 8 | d[o + 3] as u32
 }
 
-/// Codepoint of the first `char` of `s`, so callers can pass the crate's
-/// existing `&str` icon constants straight through.
+/// Codepoint of the first `char` of `s`.
 pub const fn cp(s: &str) -> u32 {
     let b = s.as_bytes();
     let b0 = b[0] as u32;
@@ -257,10 +252,8 @@ const fn is_kept(keep: &[u64; KEEP_WORDS], g: usize) -> bool {
 
 /// Renumbered id of `old`: the number of kept glyphs below it.
 ///
-/// Ids are assigned in ascending source order, so relative order is preserved
-/// and `GSUB` coverage tables stay sorted without re-sorting. Counting bits
-/// costs ~128 iterations and avoids carrying an 8192-entry map through const
-/// evaluation.
+/// Ids are assigned in ascending source order, so `GSUB` coverage tables stay
+/// sorted without re-sorting.
 const fn new_gid(keep: &[u64; KEEP_WORDS], old: usize) -> u16 {
     let mut n = 0u32;
     let w = old / 64;
@@ -318,9 +311,8 @@ const fn plan(src: &[u8], icons: &[&str]) -> Plan {
         i += 1;
     }
 
-    // 2. Keep every ASCII-mapped glyph. These are the letters the `liga`
-    //    ligatures start from, and the reason the autohinter treats the icons
-    //    as Latin. ~30 simple glyphs, about 550 bytes.
+    // 2. Keep every ASCII-mapped glyph: the letters the `liga` ligatures start
+    //    from, and what makes the autohinter treat the icons as Latin.
     let seg_count_src = be16(src, sub + 6) as usize / 2;
     let s_end = sub + 14;
     let s_start = s_end + seg_count_src * 2 + 2;
@@ -354,8 +346,7 @@ const fn plan(src: &[u8], icons: &[&str]) -> Plan {
             let e = loca_at(src, loca, src_long, g + 1);
             if e > s {
                 // Composite glyphs embed the ids of their components, which
-                // renumbering would invalidate. Phosphor has none; refuse
-                // rather than emit a silently broken outline.
+                // renumbering would invalidate. Phosphor has none.
                 if be16(src, glyf + s) >= 0x8000 {
                     panic!("egui-phosphor: composite glyphs are not supported");
                 }
@@ -784,8 +775,8 @@ struct SegArrays {
 }
 
 impl SegArrays {
-    /// idDelta is `gid - codepoint` mod 65536, and glyph ids are preserved, so
-    /// a run has a constant delta and idRangeOffset is always 0.
+    /// Codepoint and glyph id advance together within a run, so `idDelta` is
+    /// constant across it and `idRangeOffset` is always 0.
     const fn write(&self, out: &mut [u8], seg: usize, start_c: u32, end_c: u32, start_g: u32) {
         put16(out, self.end + 2 * seg, end_c as u16);
         put16(out, self.start + 2 * seg, start_c as u16);

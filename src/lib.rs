@@ -4,8 +4,7 @@ pub use variants::*;
 #[cfg(feature = "subset")]
 pub mod subset;
 
-/// Re-exported so [`subset!`] can name `egui` types without assuming anything
-/// about the calling crate's imports.
+/// Re-exported for [`subset!`].
 pub use egui;
 
 pub fn add_to_fonts(fonts: &mut egui::FontDefinitions, variant: Variant) {
