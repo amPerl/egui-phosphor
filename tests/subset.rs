@@ -45,8 +45,8 @@ fn ctx_for(bytes: &'static [u8]) -> egui::Context {
     ctx
 }
 
-/// Rasterise `s` and return the glyph's alpha bitmap dimensions and total ink.
-fn raster(ctx: &egui::Context, s: &str, size: f32) -> Option<([usize; 2], u64)> {
+/// Rasterise `s` and return its advance, alpha bitmap dimensions and total ink.
+fn raster(ctx: &egui::Context, s: &str, size: f32) -> Option<(f32, [usize; 2], u64)> {
     let id = FontId::new(size, FontFamily::Name("f".into()));
     let galley = ctx.fonts_mut(|f| f.layout_no_wrap(s.to_owned(), id, egui::Color32::WHITE));
     let row = galley.rows.first()?;
@@ -64,7 +64,7 @@ fn raster(ctx: &egui::Context, s: &str, size: f32) -> Option<([usize; 2], u64)> 
             ink += img[(x, y)].a() as u64;
         }
     }
-    Some(([x1 - x0, y1 - y0], ink))
+    Some((glyph.advance_width, [x1 - x0, y1 - y0], ink))
 }
 
 #[test]
