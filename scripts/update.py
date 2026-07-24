@@ -56,22 +56,47 @@ for variant, (font, icons) in variants.items():
     with open(font_file, "wb") as file:
         file.write(font)
 
-    with open(f"src/variants/{variant}.rs", "w") as file:
-        file.write("#![allow(unused)]\n")
-        icon_list_entry = []
+# Normalise each variant's icons to name -> codepoint, dropping the variant
+# suffix that Phosphor appends to non-regular names.
+tables = {}
+for variant, (_, icons) in variants.items():
+    table = {}
+    for name, code in icons.items():
+        name = name.replace("-", "_").upper()
+        if variant != "regular":
+            name = name[: -(len(variant) + 1)]
+        table[name] = code
+    tables[variant] = table
 
-        for name, code in icons.items():
-            code_point = hex(code)[2:].upper()
+# All variants have always used the same codepoints, so src/variants/ ships one
+# shared table that each variant module re-exports. Verify that still holds --
+# if it ever stops, the modules need their own tables again.
+reference = tables["regular"]
+for variant, table in tables.items():
+    if table != reference:
+        differing = sorted(
+            name
+            for name in set(table) | set(reference)
+            if table.get(name) != reference.get(name)
+        )
+        raise SystemExit(
+            f"[!] {variant} no longer shares regular's codepoints "
+            f"({len(differing)} differ, e.g. {differing[:5]}).\n"
+            f"    src/variants/ assumes one shared table; give each variant its "
+            f"own again before regenerating."
+        )
+print(f"[*] All {len(tables)} variants agree on {len(reference)} codepoints")
 
-            name = name.replace("-", "_").upper()
-            if variant != "regular":
-                name = name[: -(len(variant) + 1)]
+with open("src/variants/codepoints.rs", "w", newline="\n") as file:
+    file.write("#![allow(unused)]\n")
+    for name, code in reference.items():
+        file.write(f'pub const {name}: &str = "\\u{{{hex(code)[2:].upper()}}}";\n')
+    file.write("\npub const ICONS: &[(&str, &str)] = &[\n    ")
+    file.write(",\n    ".join(f'("{name}", {name})' for name in reference))
+    file.write(",\n];\n")
 
-            icon_list_entry.append(f'("{name}", {name})')
-
-            file.write(f'pub const {name}: &str = "\\u{{{code_point}}}";\n')
-        file.write("\npub const ICONS: &[(&str, &str)] = &[\n    ")
-        file.write(",\n    ".join(icon_list_entry))
-        file.write(",\n];\n")
+for variant in tables:
+    with open(f"src/variants/{variant}.rs", "w", newline="\n") as file:
+        file.write("pub use super::codepoints::*;\n")
 
 print("[*] Done!")
