@@ -35,7 +35,7 @@ pub enum Variant {
 }
 
 impl Variant {
-    pub fn font_bytes(&self) -> &'static [u8] {
+    pub const fn font_bytes(&self) -> &'static [u8] {
         match self {
             #[cfg(feature = "thin")]
             Variant::Thin => &*include_bytes!("../../res/Phosphor-Thin.ttf"),
