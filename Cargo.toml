@@ -16,6 +16,9 @@ light = []
 regular = []
 bold = []
 fill = []
+# Compile-time font subsetting via the `subset!` macro. Adds no dependencies.
+# No cost to include all variants, since a subset only embeds the icons you name.
+subset = ["thin", "light", "regular", "bold", "fill"]
 
 [dev-dependencies]
 eframe = "0.36"
@@ -23,3 +26,15 @@ eframe = "0.36"
 [[example]]
 name = "multiple_variants"
 required-features = ["thin", "light", "regular", "bold", "fill"]
+
+[[example]]
+name = "subset"
+required-features = ["subset"]
+
+[[test]]
+name = "subset"
+required-features = ["subset"]
+
+[[test]]
+name = "multi_variant"
+required-features = ["subset"]

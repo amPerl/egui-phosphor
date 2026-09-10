@@ -1,3 +1,7 @@
+// Every variant uses the same codepoints, so they share one table and each
+// variant module re-exports it. `update.py` verifies this still holds.
+mod codepoints;
+
 #[cfg(feature = "bold")]
 pub mod bold;
 #[cfg(feature = "fill")]
@@ -20,6 +24,29 @@ compile_error!(
     "At least one font variant must be selected as a crate feature. When in doubt, use default features."
 );
 
+pub mod bytes {
+    #[cfg(feature = "thin")]
+    pub mod thin {
+        pub const FONT: &[u8] = include_bytes!("../../res/Phosphor-Thin.ttf");
+    }
+    #[cfg(feature = "light")]
+    pub mod light {
+        pub const FONT: &[u8] = include_bytes!("../../res/Phosphor-Light.ttf");
+    }
+    #[cfg(feature = "regular")]
+    pub mod regular {
+        pub const FONT: &[u8] = include_bytes!("../../res/Phosphor.ttf");
+    }
+    #[cfg(feature = "bold")]
+    pub mod bold {
+        pub const FONT: &[u8] = include_bytes!("../../res/Phosphor-Bold.ttf");
+    }
+    #[cfg(feature = "fill")]
+    pub mod fill {
+        pub const FONT: &[u8] = include_bytes!("../../res/Phosphor-Fill.ttf");
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum Variant {
     #[cfg(feature = "thin")]
@@ -38,15 +65,15 @@ impl Variant {
     pub fn font_bytes(&self) -> &'static [u8] {
         match self {
             #[cfg(feature = "thin")]
-            Variant::Thin => &*include_bytes!("../../res/Phosphor-Thin.ttf"),
+            Variant::Thin => bytes::thin::FONT,
             #[cfg(feature = "light")]
-            Variant::Light => &*include_bytes!("../../res/Phosphor-Light.ttf"),
+            Variant::Light => bytes::light::FONT,
             #[cfg(feature = "regular")]
-            Variant::Regular => &*include_bytes!("../../res/Phosphor.ttf"),
+            Variant::Regular => bytes::regular::FONT,
             #[cfg(feature = "bold")]
-            Variant::Bold => &*include_bytes!("../../res/Phosphor-Bold.ttf"),
+            Variant::Bold => bytes::bold::FONT,
             #[cfg(feature = "fill")]
-            Variant::Fill => &*include_bytes!("../../res/Phosphor-Fill.ttf"),
+            Variant::Fill => bytes::fill::FONT,
         }
     }
 

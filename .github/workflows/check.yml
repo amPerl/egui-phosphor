@@ -21,4 +21,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Check with all features
-        run: cargo check --workspace --all-targets --features="thin light regular bold fill"
+        run: cargo check --workspace --all-targets --features="thin light regular bold fill subset"
+
+      - name: Test with all features
+        run: cargo test --workspace --features="thin light regular bold fill subset"
