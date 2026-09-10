@@ -7,7 +7,7 @@ Bundles [Phosphor icons](https://phosphoricons.com/) with boilerplate to use in 
 Add the crate as a dependency in Cargo.toml:
 
 ```toml
-egui-phosphor = "0.13"
+egui-phosphor = "0.14"
 ```
 
 On startup, update the fonts in your egui context:
@@ -36,7 +36,7 @@ ui.label(egui::RichText::new(format!("FILE_CODE {}", egui_phosphor::regular::FIL
 The optional `subset` feature reduces the font at compile time to only the icons you specify, at the cost of roughly 0.3s per rebuild of the crate that invokes it:
 
 ```toml
-egui-phosphor = { version = "0.13", features = ["subset"] }
+egui-phosphor = { version = "0.14", features = ["subset"] }
 ```
 
 ```rust
