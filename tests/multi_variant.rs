@@ -50,7 +50,10 @@ fn reference(bytes: &'static [u8], s: &str) -> u64 {
         .insert(FontFamily::Name("r".into()), vec!["r".to_owned()]);
     let ctx = egui::Context::default();
     ctx.set_fonts(fonts);
-    let _ = ctx.run_ui(Default::default(), |_| {});
+    // egui 0.36 panics when the deltas get dropped here
+    ctx.run_ui(Default::default(), |_| {})
+        .textures_delta
+        .clear();
     raster(&ctx, s, FontFamily::Name("r".into())).expect("reference glyph must render")
 }
 
@@ -60,7 +63,10 @@ fn app_ctx() -> egui::Context {
     icons::fill::add_as_family(&mut fonts); // selected explicitly
     let ctx = egui::Context::default();
     ctx.set_fonts(fonts);
-    let _ = ctx.run_ui(Default::default(), |_| {});
+    // egui 0.36 panics when the deltas get dropped here
+    ctx.run_ui(Default::default(), |_| {})
+        .textures_delta
+        .clear();
     ctx
 }
 
@@ -127,5 +133,46 @@ fn ordinary_text_still_renders_in_an_icon_family() {
         raster(&ctx, "s", icons::fill::family()),
         raster(&ctx, "s", FontFamily::Proportional),
         "lowercase text in an icon family should match normal text"
+    );
+}
+
+/// A second subset that is also called `icons`, like a widget library's would be
+/// next to the app's own.
+mod widgets {
+    egui_phosphor::subset! {
+        pub mod icons {
+            use regular::{TRASH};
+        }
+    }
+}
+
+#[test]
+fn same_named_subsets_do_not_overwrite_each_other() {
+    assert_ne!(
+        widgets::icons::regular::FONT_NAME,
+        icons::regular::FONT_NAME
+    );
+
+    let mut fonts = FontDefinitions::default();
+    widgets::icons::regular::add_to_fonts(&mut fonts);
+    icons::regular::add_to_fonts(&mut fonts);
+    let ctx = egui::Context::default();
+    ctx.set_fonts(fonts);
+    ctx.run_ui(Default::default(), |_| {})
+        .textures_delta
+        .clear();
+
+    let trash = reference(
+        egui_phosphor::Variant::Regular.font_bytes(),
+        widgets::icons::regular::TRASH,
+    );
+    assert_eq!(
+        raster(
+            &ctx,
+            widgets::icons::regular::TRASH,
+            FontFamily::Proportional
+        ),
+        Some(trash),
+        "the first subset's icon should still render after adding the second"
     );
 }

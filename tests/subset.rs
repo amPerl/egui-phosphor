@@ -41,7 +41,10 @@ fn ctx_for(bytes: &'static [u8]) -> egui::Context {
         .insert(FontFamily::Name("f".into()), vec!["f".to_owned()]);
     let ctx = egui::Context::default();
     ctx.set_fonts(fonts);
-    let _ = ctx.run_ui(Default::default(), |_| {});
+    // egui 0.36 panics when the deltas get dropped here
+    ctx.run_ui(Default::default(), |_| {})
+        .textures_delta
+        .clear();
     ctx
 }
 

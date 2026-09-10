@@ -976,10 +976,10 @@ macro_rules! subset {
                     pub static FONT: [u8; FONT_LEN] =
                         $crate::subset::subset_into::<FONT_LEN>(SOURCE, ICONS);
 
-                    /// The name this font is registered under, unique per
-                    /// module and variant so several subsets can coexist.
-                    pub const FONT_NAME: &str =
-                        concat!(stringify!($name), "-", stringify!($variant));
+                    /// The name this font is registered under: the full path of
+                    /// this module, e.g. `my_app::icons::regular`, so subsets in
+                    /// different modules or crates can coexist.
+                    pub const FONT_NAME: &str = module_path!();
 
                     /// The family these icons are guaranteed to render from,
                     /// whichever other variants are also loaded.
